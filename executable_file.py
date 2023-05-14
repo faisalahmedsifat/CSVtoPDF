@@ -19,7 +19,7 @@ def browse_folder():
 
 def run_script(csv_file, output_folder_path):
     # Run the Python script with the CSV file location as an argument
-    os.system(f"python script.py {csv_file} {output_folder_path}")
+    os.system(f"python script.py \"{csv_file}\" \"{output_folder_path}\"")
     tk.messagebox.showinfo(title="Task Completed",
                            message="The conversion is complete!")
 

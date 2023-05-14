@@ -109,7 +109,5 @@ for i in range(0, len(html_files)):
     os.remove(os.path.join(output_folder, html_files[i]))
 
 
-    
-        
         
 print("Done")
