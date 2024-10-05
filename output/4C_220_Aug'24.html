@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Bill Template</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        line-height: 1.5;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      table td,
+      table th {
+        border: 0px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      } /* Media queries */
+      @media screen and (max-width: 600px) {
+        .container {
+          max-width: 400px;
+          padding: 10px;
+        }
+        table td,
+        table th {
+          font-size: 12px;
+          padding: 5px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container" style="text-align: center">
+      <h1>Bill</h1>
+      <p>
+        Hirajheel R/A, Road No-08, House No- <b>220</b
+        ><br />Siddhirganj, Narayanganj.
+      </p>
+      <table style="margin-top: 30px">
+        <tr>
+          <td style="font-weight: bold">
+            Flat No : 4C
+          </td>
+          <td>Month : August</td>
+          <td>Meter No : 57440.0</td>
+        </tr>
+        <tr>
+          <td>Current Unit : 13174.0</td>
+          <td>Previous Unit : 13030.0</td>
+          <td>Total Unit: 144.0</td>
+        </tr>
+        <tr>
+          <td>Electric Bill: 1296.0</td>
+          <td>Gas Bill: 1080</td>
+          
+        </tr>
+        <tr>
+          <td>Rent : 7000</td>
+          <!-- <td>Cleaning Bill : </td> -->
+          <td>Service Charge : 500.0</td> 
+          <td></td>
+        </tr>
+        <tr>
+          <td>Previous Due : 0.0</td>
+        </tr>
+        <tr>
+          <td>Advance Paid : nan</td>
+        </tr>
+        <tr>
+          <td>Total : 9876.0</td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>Comments : </td>
+        </tr>
+        <tr>
+          <td></td>
+          <td></td>
+          <td style="text-align: right">Signature</td>
+        </tr>
+      </table>
+      <hr />
+      <div
+        style="
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+          margin-top: 40px;
+          padding: 8px;
+        "
+      >
+        <div>
+          <div style="font-weight: bold; text-align: left">
+            Flat No : 4C
+          </div>
+          <div style="margin-top: 10px; text-align: left">
+            Total Bill : 9876.0
+          </div>
+          <div style="margin-top: 10px; text-align: left">
+            Month : August
+          </div>
+          <!-- <div style="margin-top: 20px; text-align: right">Signature</div> -->
+        </div>
+        <div>
+          <div style="margin-top: 60px; text-align: right">Signature</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Bill Template</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        line-height: 1.5;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      table td,
+      table th {
+        border: 0px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      } /* Media queries */
+      @media screen and (max-width: 600px) {
+        .container {
+          max-width: 400px;
+          padding: 10px;
+        }
+        table td,
+        table th {
+          font-size: 12px;
+          padding: 5px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container" style="text-align: center">
+      <h1>Bill</h1>
+      <p>
+        Hirajheel R/A, Road No-08, House No- <b>{{house_num}}</b
+        ><br />Siddhirganj, Narayanganj.
+      </p>
+      <table style="margin-top: 30px">
+        <tr>
+          <td style="font-weight: bold">
+            Flat No : {{room_num}}
+          </td>
+          <td>Month : {{previous_month}}</td>
+          <td>Meter No : {{meter_no}}</td>
+        </tr>
+        <tr>
+          <td>Current Unit : {{present_units}}</td>
+          <td>Previous Unit : {{previous_units}}</td>
+          <td>Total Unit: {{units}}</td>
+        </tr>
+        <tr>
+          <td>Electric Bill: {{electric_bill}}</td>
+          <td>Gas Bill: {{gas_bill}}</td>
+          
+        </tr>
+        <tr>
+          <td>Rent : {{rent}}</td>
+          <!-- <td>Cleaning Bill : {{cleaning_bill}}</td> -->
+          <td>Service Charge : {{service_charge}}</td> 
+          <td></td>
+        </tr>
+        <tr>
+          <td>Previous Due : {{previous_due}}</td>
+        </tr>
+        <tr>
+          <td>Advance Paid : {{advance_paid}}</td>
+        </tr>
+        <tr>
+          <td>Total : {{total_bill}}</td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>Comments : {{comments}}</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td></td>
+          <td style="text-align: right">Signature</td>
+        </tr>
+      </table>
+      <hr />
+      <div
+        style="
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+          margin-top: 40px;
+          padding: 8px;
+        "
+      >
+        <div>
+          <div style="font-weight: bold; text-align: left">
+            Flat No : {{room_num}}
+          </div>
+          <div style="margin-top: 10px; text-align: left">
+            Total Bill : {{total_bill}}
+          </div>
+          <div style="margin-top: 10px; text-align: left">
+            Month : {{previous_month}}
+          </div>
+          <!-- <div style="margin-top: 20px; text-align: right">Signature</div> -->
+        </div>
+        <div>
+          <div style="margin-top: 60px; text-align: right">Signature</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
