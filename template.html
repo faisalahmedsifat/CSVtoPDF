@@ -1,120 +1,347 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Bill Template</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-        line-height: 1.5;
-        margin: 0;
-        padding: 0;
-      }
-      .container {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 20px;
-      }
-      table {
-        border-collapse: collapse;
-        width: 100%;
-      }
-      table td,
-      table th {
-        border: 0px solid #ddd;
-        padding: 8px;
-        text-align: left;
-      } /* Media queries */
-      @media screen and (max-width: 600px) {
-        .container {
-          max-width: 400px;
-          padding: 10px;
-        }
-        table td,
-        table th {
-          font-size: 12px;
-          padding: 5px;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container" style="text-align: center">
-      <h1>Bill</h1>
-      <p>
-        Hirajheel R/A, Road No-08, House No- <b>{{house_num}}</b
-        ><br />Siddhirganj, Narayanganj.
-      </p>
-      <table style="margin-top: 30px">
-        <tr>
-          <td style="font-weight: bold">
-            Flat No : {{room_num}}
-          </td>
-          <td>Month : {{previous_month}}</td>
-          <td>Meter No : {{meter_no}}</td>
-        </tr>
-        <tr>
-          <td>Current Unit : {{present_units}}</td>
-          <td>Previous Unit : {{previous_units}}</td>
-          <td>Total Unit: {{units}}</td>
-        </tr>
-        <tr>
-          <td>Electric Bill: {{electric_bill}}</td>
-          <td>Gas Bill: {{gas_bill}}</td>
-          
-        </tr>
-        <tr>
-          <td>Rent : {{rent}}</td>
-          <!-- <td>Cleaning Bill : {{cleaning_bill}}</td> -->
-          <td>Service Charge : {{service_charge}}</td> 
-          <td></td>
-        </tr>
-        <tr>
-          <td>Previous Due : {{previous_due}}</td>
-        </tr>
-        <tr>
-          <td>Advance Paid : {{advance_paid}}</td>
-        </tr>
-        <tr>
-          <td>Total : {{total_bill}}</td>
-          <td></td>
-          <td></td>
-        </tr>
-        <tr>
-          <td>Comments : {{comments}}</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td></td>
-          <td style="text-align: right">Signature</td>
-        </tr>
-      </table>
-      <hr />
-      <div
-        style="
-          display: flex;
-          flex-direction: row;
-          justify-content: space-between;
-          margin-top: 40px;
-          padding: 8px;
-        "
-      >
-        <div>
-          <div style="font-weight: bold; text-align: left">
-            Flat No : {{room_num}}
-          </div>
-          <div style="margin-top: 10px; text-align: left">
-            Total Bill : {{total_bill}}
-          </div>
-          <div style="margin-top: 10px; text-align: left">
-            Month : {{previous_month}}
-          </div>
-          <!-- <div style="margin-top: 20px; text-align: right">Signature</div> -->
-        </div>
-        <div>
-          <div style="margin-top: 60px; text-align: right">Signature</div>
+
+<head>
+  <meta charset="utf-8">
+  <title>Bill — {{room_num}}</title>
+  <style>
+    /* ── Page setup: true A4, no margins (we control padding inside) ── */
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 12pt;
+      color: #1a1a1a;
+    }
+
+    /* ── Full A4 page split into top and bottom halves ── */
+    .page {
+      width: 210mm;
+      height: 297mm;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .half {
+      flex: 1;
+      /* each half = 148.5mm */
+      padding: 10mm 12mm;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ════════════ TOP HALF — Landlord copy ════════════ */
+
+    .header {
+      text-align: center;
+      border-bottom: 2px solid #1a1a1a;
+      padding-bottom: 4mm;
+      margin-bottom: 5mm;
+    }
+
+    .header h1 {
+      font-size: 20pt;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+
+    .header .address {
+      font-size: 10pt;
+      color: #444;
+      margin-top: 2mm;
+    }
+
+    /* Meta row: Flat / Month / Meter */
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      padding: 3mm 4mm;
+      margin-bottom: 5mm;
+      font-size: 11pt;
+    }
+
+    .meta strong {
+      font-size: 12pt;
+    }
+
+    /* Bill detail table */
+    .bill-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .bill-table tr td {
+      padding: 2.5mm 3mm;
+      border-bottom: 1px solid #eee;
+      font-size: 11pt;
+    }
+
+    .bill-table tr td:last-child {
+      text-align: right;
+      font-weight: 600;
+    }
+
+    .bill-table tr.spacer td {
+      border: none;
+      padding: 1mm;
+    }
+
+    .bill-table tr.total td {
+      border-top: 2px solid #1a1a1a;
+      border-bottom: none;
+      padding-top: 3mm;
+      font-size: 13pt;
+      font-weight: 900;
+    }
+
+    /* Push signature to bottom of top half */
+    .top-footer {
+      margin-top: auto;
+      padding-top: 4mm;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-top: 1px solid #ccc;
+      font-size: 10pt;
+      color: #555;
+    }
+
+    .sig-block {
+      text-align: center;
+    }
+
+    .sig-line {
+      border-top: 1px solid #333;
+      width: 45mm;
+      padding-top: 1.5mm;
+      font-size: 9pt;
+      color: #333;
+    }
+
+    /* ════════════ CUT LINE ════════════ */
+    .cut {
+      height: 6mm;
+      display: flex;
+      align-items: center;
+      gap: 3mm;
+      padding: 0 12mm;
+      font-size: 9pt;
+      color: #888;
+      flex-shrink: 0;
+    }
+
+    .cut-dash {
+      flex: 1;
+      border-top: 2px dashed #aaa;
+    }
+
+    /* ════════════ BOTTOM HALF — Tenant copy ════════════ */
+    .slip-title {
+      text-align: center;
+      font-size: 12pt;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #444;
+      margin-bottom: 6mm;
+    }
+
+    .slip-grid {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .slip-grid td {
+      width: 33%;
+      padding: 3mm 4mm 5mm 4mm;
+    }
+
+    .slip-grid .label {
+      display: block;
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #888;
+      margin-bottom: 1mm;
+    }
+
+    .slip-grid .value {
+      font-size: 14pt;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .slip-grid .value.big {
+      font-size: 20pt;
+      color: #000;
+    }
+
+    .slip-footer {
+      margin-top: auto;
+      padding-top: 4mm;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-top: 1px solid #ccc;
+      font-size: 9.5pt;
+      color: #666;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+
+    <!-- ═══ TOP HALF — Landlord copy ═══ -->
+    <div class="half">
+
+      <div class="header">
+        <h1>Monthly Bill</h1>
+        <div class="address">
+          Hirajheel R/A, Road No-08, House No- <strong>{{house_num}}</strong><br>
+          Siddhirganj, Narayanganj
         </div>
       </div>
+
+      <div class="meta">
+        <div>Flat No: <strong>{{room_num}}</strong></div>
+        <div>Month: <strong>{{previous_month}}</strong></div>
+        <div>Meter No: <strong>{{meter_no}}</strong></div>
+      </div>
+
+      <table class="bill-table">
+        <tr>
+          <td>Previous Meter Reading</td>
+          <td>{{previous_units}}</td>
+        </tr>
+        <tr>
+          <td>Current Meter Reading</td>
+          <td>{{present_units}}</td>
+        </tr>
+        <tr>
+          <td>Units Consumed</td>
+          <td>{{units}}</td>
+        </tr>
+        <tr class="spacer">
+          <td colspan="2"></td>
+        </tr>
+        <tr>
+          <td>Electricity Bill</td>
+          <td>৳ {{electric_bill}}</td>
+        </tr>
+        <tr>
+          <td>Gas Bill</td>
+          <td>৳ {{gas_bill}}</td>
+        </tr>
+        <tr>
+          <td>Service Charge</td>
+          <td>৳ {{service_charge}}</td>
+        </tr>
+        <tr>
+          <td>Rent</td>
+          <td>৳ {{rent}}</td>
+        </tr>
+        <tr>
+          <td>Previous Due</td>
+          <td>৳ {{previous_due}}</td>
+        </tr>
+        <tr>
+          <td>Advance Paid</td>
+          <td>৳ {{advance_paid}}</td>
+        </tr>
+        <tr class="total">
+          <td>TOTAL PAYABLE</td>
+          <td>৳ {{total_bill}}</td>
+        </tr>
+      </table>
+
+      <div class="top-footer">
+        <div>{% if comments %}Comments: {{comments}}{% endif %}</div>
+        <div class="sig-block">
+          <div class="sig-line">Landlord Signature</div>
+        </div>
+      </div>
+
     </div>
-  </body>
+
+    <!-- ═══ CUT LINE ═══ -->
+    <div class="cut">
+      <div class="cut-dash"></div>
+      <span>✂&nbsp;&nbsp;Tenant Copy — cut here</span>
+      <div class="cut-dash"></div>
+    </div>
+
+    <!-- ═══ BOTTOM HALF — Tenant copy ═══ -->
+    <div class="half">
+      <div class="slip-title">Tenant Receipt — {{previous_month}}</div>
+
+      <table class="slip-grid">
+        <tr>
+          <td>
+            <span class="label">House No</span>
+            <span class="value">{{house_num}}</span>
+          </td>
+          <td>
+            <span class="label">Flat No</span>
+            <span class="value">{{room_num}}</span>
+          </td>
+          <td>
+            <span class="label">Month</span>
+            <span class="value">{{previous_month}}</span>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <span class="label">Electricity</span>
+            <span class="value">৳ {{electric_bill}}</span>
+          </td>
+          <td>
+            <span class="label">Gas + Service</span>
+            <span class="value">৳ {{ (gas_bill | float + service_charge | float) | int }}</span>
+          </td>
+          <td>
+            <span class="label">Rent</span>
+            <span class="value">৳ {{rent}}</span>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <span class="label">Total Payable</span>
+            <span class="value big">৳ {{total_bill}}</span>
+          </td>
+          <td>
+            <span class="label">Previous Due</span>
+            <span class="value">৳ {{previous_due}}</span>
+          </td>
+          <td>
+            <span class="label">Advance Paid</span>
+            <span class="value">৳ {{advance_paid}}</span>
+          </td>
+        </tr>
+      </table>
+
+      <div class="slip-footer">
+        <div>Keep this receipt for your records.</div>
+        <div class="sig-block">
+          <div class="sig-line">Tenant Signature</div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</body>
+
 </html>
