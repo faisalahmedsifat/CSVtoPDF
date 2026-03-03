@@ -27,7 +27,7 @@ function calcRoom(room, rate, highRate, threshold) {
     };
 }
 
-// ── Editable number cell ──────────────────────────────────────────────────────
+// ── Editable number cell (desktop table) ──────────────────────────────────────
 function NumCell({ value, onChange, highlight }) {
     return (
         <td>
@@ -41,7 +41,7 @@ function NumCell({ value, onChange, highlight }) {
     );
 }
 
-// ── Building table ────────────────────────────────────────────────────────────
+// ── Desktop building table (hidden on mobile via CSS) ─────────────────────────
 function BuildingTable({ building, rooms, onChange, rate, highRate, threshold }) {
     return (
         <div className="table-wrap">
@@ -103,6 +103,96 @@ function BuildingTable({ building, rooms, onChange, rate, highRate, threshold })
     );
 }
 
+// ── Mobile room card (shown on mobile via CSS) ────────────────────────────────
+function RoomCard({ room, buildingId, onChange, rate, highRate, threshold }) {
+    const [expanded, setExpanded] = useState(false);
+    const calc = calcRoom(room, rate, highRate, threshold);
+
+    const field = (label, field, highlight = false) => (
+        <div className={`room-card-field${highlight ? ' highlight' : ''}`}>
+            <label>{label}</label>
+            <input
+                type="number"
+                value={room[field]}
+                onChange={(e) => onChange(buildingId, room.room_no, field, Number(e.target.value))}
+            />
+        </div>
+    );
+
+    return (
+        <div className="room-card">
+            <div className="room-card-header">
+                <h3>
+                    {room.room_no}
+                    {room.meter_no && <span style={{ color: 'var(--muted)', fontWeight: 400, fontSize: '0.8rem', marginLeft: 6 }}>#{room.meter_no}</span>}
+                </h3>
+                <div className="room-card-total">৳{calc.total_bill}</div>
+            </div>
+
+            {/* Primary fields — always visible */}
+            <div className="room-card-fields">
+                <div className="room-card-field">
+                    <label>Prev. Units</label>
+                    <input type="number" value={room.previous_units} readOnly
+                        style={{ opacity: 0.6, cursor: 'default' }} />
+                </div>
+                {field('Present Units ✏️', 'present_units', true)}
+            </div>
+
+            {/* Derived values */}
+            <div className="room-card-derived">
+                <div>Used: <span>{calc.units_used}</span></div>
+                <div>Elec: <span>৳{calc.electric_bill}</span></div>
+            </div>
+
+            {/* Expandable details */}
+            <button className="room-card-expand" onClick={() => setExpanded(!expanded)}>
+                {expanded ? '▲ Hide details' : '▼ More details'}
+            </button>
+
+            {expanded && (
+                <div className="room-card-details">
+                    <div className="room-card-fields">
+                        {field('Rent', 'rent')}
+                        {field('Gas Bill', 'gas_bill')}
+                        {field('Service Charge', 'service_charge')}
+                        {field('Previous Due', 'previous_due')}
+                        {field('Paid', 'paid')}
+                        <div className="room-card-field">
+                            <label>Comments</label>
+                            <input
+                                type="text"
+                                value={room.comments}
+                                onChange={(e) => onChange(buildingId, room.room_no, 'comments', e.target.value)}
+                                placeholder="Note…"
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ── Mobile building card list ─────────────────────────────────────────────────
+function BuildingCards({ building, rooms, onChange, rate, highRate, threshold }) {
+    return (
+        <div className="room-cards">
+            {rooms.map((room) => (
+                <RoomCard
+                    key={room.room_no}
+                    room={room}
+                    buildingId={building.id}
+                    onChange={onChange}
+                    rate={rate}
+                    highRate={highRate}
+                    threshold={threshold}
+                />
+            ))}
+        </div>
+    );
+}
+
 // ── Main MonthEditor page ─────────────────────────────────────────────────────
 export default function MonthEditor() {
     const { year, month } = useParams();
@@ -144,13 +234,11 @@ export default function MonthEditor() {
     const handleSave = async () => {
         setSaving(true);
         try {
-            // Save rate settings
             await updateRate(year, month, {
                 electricity_rate: rate,
                 electricity_rate_high: highRate,
                 rate_threshold_units: threshold,
             });
-            // Save room readings
             const saved = await updateRooms(year, month, rooms);
             setRooms(saved.data.map((r) => ({ ...r })));
             setDirty(false);
@@ -172,7 +260,7 @@ export default function MonthEditor() {
             await generatePdf(year, month);
             toast('PDF downloaded!');
         } catch {
-            toast('PDF generation failed. Is wkhtmltopdf installed?', 'error');
+            toast('PDF generation failed.', 'error');
         } finally {
             setGeneratingPdf(false);
         }
@@ -207,13 +295,14 @@ export default function MonthEditor() {
                     <h1>{data.month_name} {year}</h1>
                     <p className="text-muted">
                         Edit present units and other fields. Totals update live.
-                        {dirty && <span style={{ color: 'var(--warning)', marginLeft: 8 }}>● Unsaved changes</span>}
+                        {dirty && <span style={{ color: 'var(--warning)', marginLeft: 8 }}>● Unsaved</span>}
                     </p>
                 </div>
-                <div className="flex gap-2 wrap">
+                {/* Desktop actions (hidden on mobile via CSS) */}
+                <div className="desktop-actions">
                     <button className="btn btn-ghost" onClick={() => navigate('/')}>← Dashboard</button>
                     <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-                        {saving ? '⏳ Saving…' : '💾 Save Changes'}
+                        {saving ? '⏳ Saving…' : '💾 Save'}
                     </button>
                     <button className="btn btn-success" onClick={handleGeneratePdf} disabled={generatingPdf || dirty}>
                         {generatingPdf ? '⏳ Generating…' : '📄 Generate PDF'}
@@ -238,15 +327,22 @@ export default function MonthEditor() {
                     <input type="number" value={threshold} min={0} style={{ width: 110 }}
                         onChange={(e) => { setThreshold(+e.target.value); setDirty(true); }} />
                 </div>
-                <div style={{ marginLeft: 'auto', alignSelf: 'flex-end' }}>
+                <div className="grand-total-desktop" style={{ marginLeft: 'auto', alignSelf: 'flex-end' }}>
                     <div className="text-muted text-sm">Grand Total</div>
                     <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#4ade80' }}>
                         ৳{Math.round(grandTotal).toLocaleString()}
                     </div>
                 </div>
+                {/* Mobile-visible grand total (always inside rate bar) */}
+                <div style={{ textAlign: 'center', padding: '0.25rem 0' }} className="mobile-only-total">
+                    <span className="text-muted text-sm">Grand Total:</span>
+                    <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#4ade80', marginLeft: 8 }}>
+                        ৳{Math.round(grandTotal).toLocaleString()}
+                    </span>
+                </div>
             </div>
 
-            {/* ── Building tables ── */}
+            {/* ── Building tables/cards ── */}
             {[220, 226].map((bldgId) => {
                 const bldgRooms = buildingGroups[bldgId] || [];
                 const bldgTotal = bldgRooms.reduce((s, r) => s + calcRoom(r, rate, highRate, threshold).total_bill, 0);
@@ -259,7 +355,17 @@ export default function MonthEditor() {
                             </h2>
                             <span className="badge badge-green">Total: ৳{Math.round(bldgTotal).toLocaleString()}</span>
                         </div>
+                        {/* Desktop table */}
                         <BuildingTable
+                            building={fakeBuilding}
+                            rooms={bldgRooms}
+                            onChange={handleCellChange}
+                            rate={rate}
+                            highRate={highRate}
+                            threshold={threshold}
+                        />
+                        {/* Mobile cards */}
+                        <BuildingCards
                             building={fakeBuilding}
                             rooms={bldgRooms}
                             onChange={handleCellChange}
@@ -270,6 +376,17 @@ export default function MonthEditor() {
                     </div>
                 );
             })}
+
+            {/* ── Mobile sticky action bar ── */}
+            <div className="mobile-action-bar">
+                <button className="btn btn-ghost btn-sm" onClick={() => navigate('/')}>← Back</button>
+                <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+                    {saving ? '⏳' : '💾 Save'}
+                </button>
+                <button className="btn btn-success" onClick={handleGeneratePdf} disabled={generatingPdf || dirty}>
+                    {generatingPdf ? '⏳' : '📄 PDF'}
+                </button>
+            </div>
         </div>
     );
 }

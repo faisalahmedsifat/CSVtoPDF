@@ -42,6 +42,7 @@ export const createMonth = (year, month) => api.post('/api/months', { year, mont
 export const getMonth = (year, month) => api.get(`/api/months/${year}/${month}`);
 export const updateRate = (year, month, rateData) => api.put(`/api/months/${year}/${month}/rate`, rateData);
 export const updateRooms = (year, month, rooms) => api.put(`/api/months/${year}/${month}/rooms`, rooms);
+export const deleteMonth = (year, month) => api.delete(`/api/months/${year}/${month}`);
 
 // ── PDF ───────────────────────────────────────────────────────────
 export const generatePdf = async (year, month) => {
@@ -52,4 +53,13 @@ export const generatePdf = async (year, month) => {
     a.download = `bills_${year}_${String(month).padStart(2, '0')}.pdf`;
     a.click();
     window.URL.revokeObjectURL(url);
+};
+
+// ── CSV Import ────────────────────────────────────────────────────
+export const importCSV = (year, month, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/api/months/import-csv?year=${year}&month=${month}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
 };

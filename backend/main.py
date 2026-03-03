@@ -323,6 +323,161 @@ def generate_pdf(year: int, month: int, db: Session = Depends(get_db), user: str
     )
 
 
+@app.delete("/api/months/{year}/{month}")
+def delete_month(year: int, month: int, db: Session = Depends(get_db), user: str = Depends(get_current_user)):
+    rec = db.query(models.MonthRecord).filter_by(year=year, month=month).first()
+    if not rec:
+        raise HTTPException(404, "Month not found")
+    db.delete(rec)  # cascade deletes room readings
+    db.commit()
+    return {"ok": True, "message": f"{calendar.month_name[month]} {year} deleted"}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CSV Import
+# ══════════════════════════════════════════════════════════════════════════════
+import csv
+import io
+from fastapi import UploadFile, File
+
+@app.post("/api/months/import-csv")
+async def import_csv(
+    year: int,
+    month: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user: str = Depends(get_current_user),
+):
+    """
+    Import a CSV file in the existing format.
+    The CSV has two building sections separated by blank rows:
+      - First section:  House 220 rooms  (rows until first blank)
+      - Second section: House 226 rooms  (rows after blank rows)
+    
+    Column mapping (0-indexed):
+      0: Room No.
+      1: Meter No.
+      2: [previous] Units T.
+      3: present units
+      4: [present] UNITS  (units used, computed — we ignore and recompute)
+      5: [present] BILL   (electric bill, computed — we ignore)
+      6: Rent
+      7: Gas Bill
+      8: Service Charge
+      9: Total W BILLS (computed — ignore)
+      10: Previous Due
+      11: Paid
+      12: Due (computed — ignore)
+      13: Occupied (flag — ignore)
+      14: TOTAL W. OC (computed — ignore)
+      15: advance paid
+    """
+    # Check if month already exists
+    existing = db.query(models.MonthRecord).filter_by(year=year, month=month).first()
+    if existing:
+        raise HTTPException(400, f"{calendar.month_name[month]} {year} already exists. Delete it first or choose a different month.")
+
+    content = await file.read()
+    text = content.decode("utf-8-sig")  # handle BOM from Excel
+    reader = csv.reader(io.StringIO(text))
+
+    rows = list(reader)
+    if not rows:
+        raise HTTPException(400, "CSV file is empty")
+
+    # Skip header row
+    data_rows = rows[1:]
+
+    # Split into building sections by blank rows
+    building_configs = {b["id"]: b for b in BUILDINGS}
+    building_ids = [b["id"] for b in BUILDINGS]  # [220, 226]
+
+    sections: list[list[list[str]]] = []
+    current_section: list[list[str]] = []
+
+    for row in data_rows:
+        # A row is "blank" if Room No. (col 0) is empty
+        room_no_val = row[0].strip() if len(row) > 0 else ""
+        if not room_no_val:
+            if current_section:
+                sections.append(current_section)
+                current_section = []
+            continue
+        current_section.append(row)
+
+    if current_section:
+        sections.append(current_section)
+
+    if len(sections) == 0:
+        raise HTTPException(400, "No room data found in the CSV")
+
+    # Create the month record
+    new_record = models.MonthRecord(
+        year=year,
+        month=month,
+        electricity_rate=DEFAULT_ELECTRICITY_RATE,
+        electricity_rate_high=DEFAULT_ELECTRICITY_RATE_HIGH,
+        rate_threshold_units=DEFAULT_RATE_THRESHOLD,
+    )
+    db.add(new_record)
+    db.flush()
+
+    imported_count = 0
+
+    def safe_float(val: str, default: float = 0.0) -> float:
+        try:
+            return float(val.strip().replace(",", ""))
+        except (ValueError, AttributeError):
+            return default
+
+    for section_idx, section in enumerate(sections):
+        # Map section index to building ID
+        if section_idx < len(building_ids):
+            bldg_id = building_ids[section_idx]
+        else:
+            break  # only handle known buildings
+
+        bldg_config = building_configs[bldg_id]
+
+        for row in section:
+            if len(row) < 7:
+                continue
+
+            room_no = row[0].strip()
+            if not room_no:
+                continue
+
+            # Look up defaults from config
+            defaults = get_room_defaults(bldg_id, room_no)
+            meter_no = row[1].strip() if row[1].strip() else defaults.get("meter_no", "")
+
+            rr = models.RoomReading(
+                month_record_id=new_record.id,
+                building_num=bldg_id,
+                room_no=room_no,
+                meter_no=meter_no,
+                previous_units=safe_float(row[2]) if len(row) > 2 else 0,
+                present_units=safe_float(row[3]) if len(row) > 3 else 0,
+                rent=safe_float(row[6]) if len(row) > 6 else defaults.get("rent", 0),
+                gas_bill=safe_float(row[7]) if len(row) > 7 else bldg_config["default_gas_bill"],
+                service_charge=safe_float(row[8]) if len(row) > 8 else bldg_config["default_service_charge"],
+                previous_due=safe_float(row[10]) if len(row) > 10 else 0,
+                paid=safe_float(row[15]) if len(row) > 15 else 0,
+            )
+            db.add(rr)
+            imported_count += 1
+
+    db.commit()
+    db.refresh(new_record)
+
+    return {
+        "message": f"Imported {imported_count} rooms into {calendar.month_name[month]} {year}",
+        "year": new_record.year,
+        "month": new_record.month,
+        "rooms_imported": imported_count,
+    }
+
+
 # ── Serve frontend build (production) ─────────────────────────────────────────
 FRONTEND_DIST = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
 if os.path.isdir(FRONTEND_DIST):
