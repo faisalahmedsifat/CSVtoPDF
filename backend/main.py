@@ -479,6 +479,24 @@ async def import_csv(
 
 
 # ── Serve frontend build (production) ─────────────────────────────────────────
+# ── Serve frontend build (production) ─────────────────────────────────────────
 FRONTEND_DIST = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+
 if os.path.isdir(FRONTEND_DIST):
-    app.mount("/", StaticFiles(directory=FRONTEND_DIST, html=True), name="frontend")
+    # Serve static assets (_assets, vite.svg, etc)
+    app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIST, "assets")), name="assets")
+    
+    # Catch-all route to serve index.html for React Router SPA
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        # Prevent shadowing the API routes
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="API route not found")
+            
+        # Serve actual files if requested (e.g. vite.svg)
+        file_path = os.path.join(FRONTEND_DIST, full_path)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+            
+        # Otherwise fallback to index.html for React Router
+        return FileResponse(os.path.join(FRONTEND_DIST, "index.html"))

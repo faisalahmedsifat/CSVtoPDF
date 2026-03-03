@@ -1,0 +1,15 @@
+node_modules
+frontend/node_modules
+frontend/dist
+__pycache__
+*.pyc
+*.pyo
+*.db
+.env
+.git
+.gitignore
+demo-csv
+*.pdf
+*.sh
+.vscode
+.idea

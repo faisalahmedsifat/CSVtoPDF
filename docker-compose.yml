@@ -1,0 +1,12 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./bills.db
+      - APP_PASSWORD=billingapp2025
+      - SECRET_KEY=local-dev-secret-key-change-in-prod
+      - ELECTRICITY_RATE=9.0
+      - ELECTRICITY_RATE_HIGH=10.0
+      - ELECTRICITY_RATE_THRESHOLD=0
