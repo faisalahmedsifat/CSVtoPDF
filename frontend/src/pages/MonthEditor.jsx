@@ -207,6 +207,7 @@ export default function MonthEditor() {
     const [saving, setSaving] = useState(false);
     const [generatingPdf, setGeneratingPdf] = useState(false);
     const [dirty, setDirty] = useState(false);
+    const [twoUp, setTwoUp] = useState(true);
 
     useEffect(() => {
         getMonth(year, month)
@@ -257,7 +258,7 @@ export default function MonthEditor() {
         }
         setGeneratingPdf(true);
         try {
-            await generatePdf(year, month);
+            await generatePdf(year, month, twoUp);
             toast('PDF downloaded!');
         } catch {
             toast('PDF generation failed.', 'error');
@@ -299,11 +300,18 @@ export default function MonthEditor() {
                     </p>
                 </div>
                 {/* Desktop actions (hidden on mobile via CSS) */}
-                <div className="desktop-actions">
+                <div className="desktop-actions" style={{ alignItems: 'center' }}>
                     <button className="btn btn-ghost" onClick={() => navigate('/')}>← Dashboard</button>
                     <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
                         {saving ? '⏳ Saving…' : '💾 Save'}
                     </button>
+
+                    <div style={{ width: '1px', height: '24px', background: 'var(--border)', margin: '0 8px' }}></div>
+
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', color: 'var(--muted)', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={twoUp} onChange={e => setTwoUp(e.target.checked)} style={{ width: 'auto', margin: 0 }} />
+                        2 pages/sheet
+                    </label>
                     <button className="btn btn-success" onClick={handleGeneratePdf} disabled={generatingPdf || dirty}>
                         {generatingPdf ? '⏳ Generating…' : '📄 Generate PDF'}
                     </button>
@@ -383,9 +391,15 @@ export default function MonthEditor() {
                 <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
                     {saving ? '⏳' : '💾 Save'}
                 </button>
-                <button className="btn btn-success" onClick={handleGeneratePdf} disabled={generatingPdf || dirty}>
-                    {generatingPdf ? '⏳' : '📄 PDF'}
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                    <button className="btn btn-success" onClick={handleGeneratePdf} disabled={generatingPdf || dirty}>
+                        {generatingPdf ? '⏳' : '📄 PDF'}
+                    </button>
+                    <label style={{ fontSize: '0.65rem', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <input type="checkbox" checked={twoUp} onChange={e => setTwoUp(e.target.checked)} style={{ width: 12, height: 12, margin: 0 }} />
+                        2-up
+                    </label>
+                </div>
             </div>
         </div>
     );

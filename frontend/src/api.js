@@ -45,8 +45,12 @@ export const updateRooms = (year, month, rooms) => api.put(`/api/months/${year}/
 export const deleteMonth = (year, month) => api.delete(`/api/months/${year}/${month}`);
 
 // ── PDF ───────────────────────────────────────────────────────────
-export const generatePdf = async (year, month) => {
-    const res = await api.post(`/api/months/${year}/${month}/generate-pdf`, {}, { responseType: 'blob' });
+export const generatePdf = async (year, month, twoUp = false) => {
+    const res = await api.post(
+        `/api/months/${year}/${month}/generate-pdf?two_up=${twoUp}`,
+        {},
+        { responseType: 'blob' } // Important for binary data (PDF)
+    );
     const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
     const a = document.createElement('a');
     a.href = url;

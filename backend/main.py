@@ -306,16 +306,16 @@ def update_rooms(
 
 
 @app.post("/api/months/{year}/{month}/generate-pdf")
-def generate_pdf(year: int, month: int, db: Session = Depends(get_db), user: str = Depends(get_current_user)):
+def generate_pdf(year: int, month: int, two_up: bool = False, db: Session = Depends(get_db), user: str = Depends(get_current_user)):
     rec = db.query(models.MonthRecord).filter_by(year=year, month=month).first()
     if not rec:
         raise HTTPException(404, "Month not found")
 
     rooms_data = [_room_to_dict(r, rec) for r in rec.rooms]
-    pdf_bytes = generate_pdf_for_month(rooms_data, year, month)
+    pdf_bytes = generate_pdf_for_month(rooms_data, year, month, two_up)
 
     month_name = calendar.month_name[month]
-    filename = f"bills_{month_name}_{year}.pdf"
+    filename = f"bills_{month_name}_{year}{'_2up' if two_up else ''}.pdf"
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
