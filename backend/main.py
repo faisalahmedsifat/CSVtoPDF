@@ -198,17 +198,23 @@ def create_month(body: MonthCreateIn, db: Session = Depends(get_db), user: str =
     db.add(new_record)
     db.flush()  # get new_record.id
 
-    # Seed rooms from config + carry-forward previous present_units → this month's previous_units
-    prev_readings: dict[tuple, float] = {}
+    # Seed rooms from previous month (carry-forward) or config defaults
+    prev_readings: dict[tuple, dict] = {}
     if prev_record:
         for pr in prev_record.rooms:
-            prev_readings[(pr.building_num, pr.room_no)] = pr.present_units
+            prev_readings[(pr.building_num, pr.room_no)] = {
+                "present_units": pr.present_units,
+                "rent": pr.rent,
+                "gas_bill": pr.gas_bill,
+                "service_charge": pr.service_charge,
+            }
 
     for bldg in BUILDINGS:
         for room in bldg["rooms"]:
             defaults = get_room_defaults(bldg["id"], room["room_no"])
             key = (bldg["id"], room["room_no"])
-            prev_u = prev_readings.get(key, 0.0)
+            prev = prev_readings.get(key)
+            prev_u = prev["present_units"] if prev else 0.0
             rr = models.RoomReading(
                 month_record_id=new_record.id,
                 building_num=bldg["id"],
@@ -216,9 +222,9 @@ def create_month(body: MonthCreateIn, db: Session = Depends(get_db), user: str =
                 meter_no=defaults.get("meter_no", ""),
                 previous_units=prev_u,
                 present_units=prev_u,  # start equal; user updates present
-                rent=defaults.get("rent", 0),
-                gas_bill=defaults.get("gas_bill", 1080),
-                service_charge=defaults.get("service_charge", 500),
+                rent=prev["rent"] if prev else defaults.get("rent", 0),
+                gas_bill=prev["gas_bill"] if prev else defaults.get("gas_bill", 1080),
+                service_charge=prev["service_charge"] if prev else defaults.get("service_charge", 500),
             )
             db.add(rr)
 
