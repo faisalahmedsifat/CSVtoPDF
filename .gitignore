@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Frontend build
+frontend/dist/
+frontend/node_modules/
+
+# IDE
+.vscode/
+.idea/
+
+# Environment (keep .env.example as template)
+.env
+
+# Database (contains local/production data)
+*.db
+
+# OS
+.DS_Store
+Thumbs.db

@@ -12,7 +12,7 @@ import datetime
 from jinja2 import Environment, FileSystemLoader
 from weasyprint import HTML, CSS
 
-TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "..")
+TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "templates")
 TEMPLATE_FILE = "template.html"
 
 

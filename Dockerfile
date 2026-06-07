@@ -27,9 +27,8 @@ WORKDIR /app
 COPY backend/requirements.txt /app/backend/requirements.txt
 RUN pip install --no-cache-dir -r /app/backend/requirements.txt
 
-# Copy backend code
+# Copy backend code (includes templates/)
 COPY backend/ /app/backend/
-COPY template.html /app/template.html
 
 # Copy built frontend from build stage
 COPY --from=frontend-build /app/frontend/dist /app/frontend/dist

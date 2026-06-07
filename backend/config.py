@@ -34,7 +34,6 @@ BUILDINGS = [
             {"room_no": "2A", "meter_no": "57437", "rent": 7500},
             {"room_no": "2B", "meter_no": "57412", "rent": 7000},
             {"room_no": "2C", "meter_no": "57436", "rent": 7500},
-            # 3BC is skipped in PDF generation (common meter / vacant)
             {"room_no": "4A", "meter_no": "830186", "rent": 7000},
             {"room_no": "4B", "meter_no": "57419",  "rent": 6500},
             {"room_no": "4C", "meter_no": "57440",  "rent": 7000},
