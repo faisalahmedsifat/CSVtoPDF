@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { getMonth, updateRate, updateRooms, generatePdf } from '../api';
+import { getMonth, updateRate, updateRooms, generatePdf, exportMonth } from '../api';
 import { useToast } from '../App';
 
 // ── Live calculation helpers (mirrors the Python model) ───────────────────────
@@ -206,6 +206,7 @@ export default function MonthEditor() {
     const [threshold, setThreshold] = useState(0);
     const [saving, setSaving] = useState(false);
     const [generatingPdf, setGeneratingPdf] = useState(false);
+    const [exporting, setExporting] = useState(null); // 'csv' | 'xlsx' | null
     const [dirty, setDirty] = useState(false);
     const [twoUp, setTwoUp] = useState(true);
 
@@ -267,6 +268,22 @@ export default function MonthEditor() {
         }
     };
 
+    const handleExport = async (format) => {
+        if (dirty) {
+            toast('Please save your changes before exporting.', 'error');
+            return;
+        }
+        setExporting(format);
+        try {
+            await exportMonth(year, month, format);
+            toast(`${format.toUpperCase()} downloaded!`);
+        } catch {
+            toast(`${format.toUpperCase()} export failed.`, 'error');
+        } finally {
+            setExporting(null);
+        }
+    };
+
     if (!data) {
         return (
             <div className="page">
@@ -314,6 +331,13 @@ export default function MonthEditor() {
                     </label>
                     <button className="btn btn-success" onClick={handleGeneratePdf} disabled={generatingPdf || dirty}>
                         {generatingPdf ? '⏳ Generating…' : '📄 Generate PDF'}
+                    </button>
+
+                    <button className="btn btn-ghost" onClick={() => handleExport('csv')} disabled={exporting !== null || dirty}>
+                        {exporting === 'csv' ? '⏳' : '📥'} Export CSV
+                    </button>
+                    <button className="btn btn-ghost" onClick={() => handleExport('xlsx')} disabled={exporting !== null || dirty}>
+                        {exporting === 'xlsx' ? '⏳' : '📥'} Export Excel
                     </button>
                 </div>
             </div>
@@ -399,6 +423,14 @@ export default function MonthEditor() {
                         <input type="checkbox" checked={twoUp} onChange={e => setTwoUp(e.target.checked)} style={{ width: 12, height: 12, margin: 0 }} />
                         2-up
                     </label>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                    <button className="btn btn-sm btn-ghost" onClick={() => handleExport('csv')} disabled={exporting !== null || dirty}>
+                        {exporting === 'csv' ? '⏳' : '📥'}
+                    </button>
+                    <button className="btn btn-sm btn-ghost" onClick={() => handleExport('xlsx')} disabled={exporting !== null || dirty}>
+                        {exporting === 'xlsx' ? '⏳' : '📊'}
+                    </button>
                 </div>
             </div>
         </div>

@@ -67,3 +67,20 @@ export const importCSV = (year, month, file) => {
         headers: { 'Content-Type': 'multipart/form-data' },
     });
 };
+
+// ── CSV / Excel Export ─────────────────────────────────────────────
+export const exportMonth = async (year, month, format = 'csv') => {
+    const res = await api.get(`/api/months/${year}/${month}/export?format=${format}`, {
+        responseType: 'blob',
+    });
+    const ext = format === 'xlsx' ? 'xlsx' : 'csv';
+    const mimeType = format === 'xlsx'
+        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        : 'text/csv';
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: mimeType }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bills_${year}_${String(month).padStart(2, '0')}.${ext}`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+};

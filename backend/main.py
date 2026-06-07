@@ -484,6 +484,147 @@ async def import_csv(
     }
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# CSV / Excel Export
+# ══════════════════════════════════════════════════════════════════════════════
+@app.get("/api/months/{year}/{month}/export")
+def export_month(
+    year: int,
+    month: int,
+    format: str = "csv",
+    db: Session = Depends(get_db),
+    user: str = Depends(get_current_user),
+):
+    """
+    Export a month's room data as CSV or Excel.
+    CSV format matches the import format exactly — exported files can be
+    re-imported via the Dashboard's "Import CSV" button.
+    """
+    if format not in ("csv", "xlsx"):
+        raise HTTPException(400, "Format must be 'csv' or 'xlsx'")
+
+    rec = db.query(models.MonthRecord).filter_by(year=year, month=month).first()
+    if not rec:
+        raise HTTPException(404, "Month not found")
+
+    rooms = rec.rooms
+
+    # Group by building
+    building_220 = [r for r in rooms if r.building_num == 220]
+    building_226 = [r for r in rooms if r.building_num == 226]
+
+    # Sort rooms within each building by room_no
+    building_220.sort(key=lambda r: r.room_no)
+    building_226.sort(key=lambda r: r.room_no)
+
+    month_name = calendar.month_name[month]
+
+    def room_export_row(r):
+        units_used = r.units_used
+        eb = r.electric_bill(rec.electricity_rate, rec.electricity_rate_high, rec.rate_threshold_units)
+        total_w_bills = eb + r.gas_bill + r.service_charge + r.rent
+        total_bill = total_w_bills + r.previous_due - r.paid
+        return [
+            r.room_no,                     # 0: Room No.
+            r.meter_no,                    # 1: Meter No.
+            r.previous_units,              # 2: Previous Units
+            r.present_units,               # 3: Present Units
+            units_used,                    # 4: Units Used
+            round(eb, 2),                  # 5: Electric Bill
+            r.rent,                        # 6: Rent
+            r.gas_bill,                    # 7: Gas Bill
+            r.service_charge,              # 8: Service Charge
+            round(total_w_bills, 2),       # 9: Total W Bills
+            r.previous_due,                # 10: Previous Due
+            0,                             # 11: Paid (import reads from col 15)
+            round(total_bill, 2),          # 12: Due
+            "",                            # 13: Occupied
+            round(total_bill, 2),          # 14: TOTAL W. OC
+            r.paid,                        # 15: Advance Paid (import reads paid from here)
+        ]
+
+    header = [
+        "Room No.", "Meter No.", "Previous Units", "Present Units",
+        "Units Used", "Electric Bill", "Rent", "Gas Bill",
+        "Service Charge", "Total W Bills", "Previous Due", "Paid",
+        "Due", "Occupied", "TOTAL W. OC", "Advance Paid",
+    ]
+
+    filename = f"bills_{month_name}_{year}"
+
+    if format == "xlsx":
+        import openpyxl
+        from openpyxl.utils import get_column_letter
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = f"{month_name} {year}"
+
+        # Header row
+        for col_idx, h in enumerate(header, 1):
+            ws.cell(row=1, column=col_idx, value=h)
+
+        row_num = 2
+
+        # Building 220 rooms
+        for r in building_220:
+            row_data = room_export_row(r)
+            for col_idx, val in enumerate(row_data, 1):
+                ws.cell(row=row_num, column=col_idx, value=val)
+            row_num += 1
+
+        # Blank separator row
+        row_num += 1
+
+        # Building 226 rooms
+        for r in building_226:
+            row_data = room_export_row(r)
+            for col_idx, val in enumerate(row_data, 1):
+                ws.cell(row=row_num, column=col_idx, value=val)
+            row_num += 1
+
+        # Auto-fit column widths
+        for col_idx in range(1, len(header) + 1):
+            max_width = len(str(header[col_idx - 1]))
+            for row in ws.iter_rows(min_col=col_idx, max_col=col_idx, min_row=2, max_row=row_num - 1):
+                for cell in row:
+                    if cell.value is not None:
+                        max_width = max(max_width, len(str(cell.value)))
+            ws.column_dimensions[get_column_letter(col_idx)].width = min(max_width + 2, 30)
+
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        return Response(
+            content=output.getvalue(),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={filename}.xlsx"},
+        )
+    else:
+        # CSV format
+        output = io.StringIO()
+        writer = csv.writer(output)
+
+        writer.writerow(header)
+
+        for r in building_220:
+            writer.writerow(room_export_row(r))
+
+        writer.writerow([])  # blank separator row between buildings
+
+        for r in building_226:
+            writer.writerow(room_export_row(r))
+
+        output.seek(0)
+
+        return Response(
+            content=output.getvalue(),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename={filename}.csv"},
+        )
+
+
 # ── Serve frontend build (production) ─────────────────────────────────────────
 # ── Serve frontend build (production) ─────────────────────────────────────────
 FRONTEND_DIST = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
